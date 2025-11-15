@@ -13,11 +13,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        {/* Preload critical resources */}
-        <link rel="preload" href="/rimal.png" as="image" />
-        <link rel="dns-prefetch" href="/assets" />
-      </head>
       <body>{children}</body>
     </html>
   )
