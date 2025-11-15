@@ -15,3 +15,27 @@ body {
   padding: 0;
 }
 
+/* Ensure footer content is always visible (fix for blog pages) */
+footer .elementor-invisible,
+footer [class*="elementor-invisible"] {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+footer .elementor-widget,
+footer .elementor-section,
+footer .elementor-column {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Move header logo up a bit */
+header img[src*="rimal.png"],
+header img[src="/rimal.png"],
+[data-elementor-type="header"] img[src*="rimal.png"],
+[class*="elementor-location-header"] img[src*="rimal.png"] {
+  margin-top: -10px !important;
+  position: relative;
+  top: -10px;
+}
+

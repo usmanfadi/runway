@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
 interface PageRendererProps {
   html: string
@@ -50,12 +50,9 @@ export default function PageRenderer({ html }: PageRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const scriptsLoadedRef = useRef<Set<string>>(new Set())
   const stylesLoadedRef = useRef<Set<string>>(new Set())
-  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (!containerRef.current || !html) return
-    
-    setIsLoading(true)
 
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
@@ -65,6 +62,67 @@ export default function PageRenderer({ html }: PageRendererProps) {
     const stylePromises: Promise<void>[] = []
     
     if (head) {
+      // Preload ALL assets first so browser caches them (won't reload on refresh)
+      const allAssets: Array<{ href: string; as: string }> = []
+      
+      // Collect all CSS files
+      head.querySelectorAll('link[rel="stylesheet"]').forEach((el) => {
+        const href = el.getAttribute('href') || ''
+        if (href.includes('alluredigital.net') && !href.includes('fonts.googleapis.com')) {
+          const filename = getAssetFilename(href)
+          if (filename) {
+            allAssets.push({ href: `/assets/${filename}`, as: 'style' })
+          }
+        }
+      })
+      
+      // Collect all script files
+      head.querySelectorAll('script[src]').forEach((el) => {
+        const src = el.getAttribute('src') || ''
+        if (src && (src.includes('alluredigital.net') || src.startsWith('/assets/'))) {
+          const filename = getAssetFilename(src)
+          if (filename) {
+            allAssets.push({ href: `/assets/${filename}`, as: 'script' })
+          }
+        }
+      })
+      
+      // Collect critical images from body
+      const body = doc.querySelector('body')
+      if (body) {
+        // Logo
+        allAssets.push({ href: '/rimal.png', as: 'image' })
+        
+        // Hero and important images (first 15)
+        let imageCount = 0
+        body.querySelectorAll('img[src]').forEach((el) => {
+          if (imageCount >= 15) return
+          const src = (el as HTMLImageElement).getAttribute('src') || ''
+          if (src && (src.includes('alluredigital.net') || src.includes('rimalweb.net') || src.startsWith('/assets/'))) {
+            const fixedSrc = src.includes('/assets/') ? src : `/assets/${getAssetFilename(src) || ''}`
+            if (fixedSrc && fixedSrc !== '/assets/' && !allAssets.some(a => a.href === fixedSrc)) {
+              allAssets.push({ href: fixedSrc, as: 'image' })
+              imageCount++
+            }
+          }
+        })
+      }
+      
+      // Add preload links for ALL assets (browser will cache them)
+      allAssets.forEach((asset) => {
+        if (asset.href && !document.querySelector(`link[rel="preload"][href="${asset.href}"]`)) {
+          const preloadLink = document.createElement('link')
+          preloadLink.rel = 'preload'
+          preloadLink.as = asset.as
+          preloadLink.href = asset.href
+          // Add crossorigin for fonts if needed
+          if (asset.as === 'font') {
+            preloadLink.crossOrigin = 'anonymous'
+          }
+          document.head.appendChild(preloadLink)
+        }
+      })
+      
       // Inject ALL stylesheets (preserve order for animations)
       head.querySelectorAll('link[rel="stylesheet"], style').forEach((el) => {
         if (el.tagName === 'LINK') {
@@ -96,7 +154,7 @@ export default function PageRenderer({ html }: PageRendererProps) {
             const stylePromise = new Promise<void>((resolve) => {
               clone.onload = () => resolve()
               clone.onerror = () => resolve() // Continue even if stylesheet fails
-              document.head.appendChild(clone)
+            document.head.appendChild(clone)
               
               // If stylesheet loads very quickly, resolve after a small delay
               setTimeout(() => resolve(), 50)
@@ -120,29 +178,42 @@ export default function PageRenderer({ html }: PageRendererProps) {
       head.querySelectorAll('meta, title').forEach((el) => {
         if (el.tagName === 'TITLE') {
           // Always update title, whether it exists or not
-          const existingTitle = document.querySelector('title')
           const titleText = el.textContent || ''
           const replacedText = titleText
             .replace(/Allure Digital/gi, 'Rimalweb')
             .replace(/AllureDigital/gi, 'Rimalweb')
             .replace(/allure digital/gi, 'Rimalweb')
+            .replace(/AllureDigital\.net/gi, 'Rimalweb')
+            .replace(/alluredigital\.net/gi, 'Rimalweb')
           
+          // Update document.title directly (this is what shows in browser tab)
+          document.title = replacedText || 'Rimalweb'
+          
+          // Also update/create title tag in head
+          let existingTitle = document.querySelector('title')
           if (existingTitle) {
-            // Update existing title
-            existingTitle.textContent = replacedText
+            existingTitle.textContent = replacedText || 'Rimalweb'
           } else {
-            // Create new title
             const newTitle = document.createElement('title')
-            newTitle.textContent = replacedText
+            newTitle.textContent = replacedText || 'Rimalweb'
             document.head.appendChild(newTitle)
           }
+          
+          // Force update after a small delay to ensure it persists
+          setTimeout(() => {
+            document.title = replacedText || 'Rimalweb'
+            const titleEl = document.querySelector('title')
+            if (titleEl) {
+              titleEl.textContent = replacedText || 'Rimalweb'
+            }
+          }, 100)
         } else if (el.tagName === 'META') {
           // Handle meta tags
-          const existing = document.querySelector(
+        const existing = document.querySelector(
             `meta[name="${el.getAttribute('name') || el.getAttribute('property')}"]`
-          )
-          if (!existing) {
-            const clone = el.cloneNode(true) as HTMLElement
+        )
+        if (!existing) {
+          const clone = el.cloneNode(true) as HTMLElement
             const content = clone.getAttribute('content')
             if (content) {
               clone.setAttribute('content', content
@@ -151,7 +222,7 @@ export default function PageRenderer({ html }: PageRendererProps) {
                 .replace(/allure digital/gi, 'Rimalweb')
                 .replace(/alluredigital\.net/gi, 'rimalweb.com'))
             }
-            document.head.appendChild(clone)
+          document.head.appendChild(clone)
           } else {
             // Update existing meta tag
             const content = el.getAttribute('content')
@@ -296,8 +367,10 @@ export default function PageRenderer({ html }: PageRendererProps) {
               
               // Make footer logo transparent
               const opacityStyle = isInFooter ? 'opacity: 0.5; ' : ''
+              // Move header logo up a bit
+              const headerPositionStyle = isInHeader ? 'margin-top: -10px; ' : ''
               // Add style to make it bigger while preserving original
-              newLogo.setAttribute('style', `width: ${width}px; height: ${height}px; object-fit: contain; ${opacityStyle}${style}`)
+              newLogo.setAttribute('style', `width: ${width}px; height: ${height}px; object-fit: contain; ${opacityStyle}${headerPositionStyle}${style}`)
               
               // Preserve parent link if exists
               if (parent.tagName === 'A') {
@@ -333,15 +406,45 @@ export default function PageRenderer({ html }: PageRendererProps) {
         el.setAttribute('style', newStyle)
       })
 
-      // Fix internal links and remove contact links
+      // Fix internal links and replace contact links with dummy data
       body.querySelectorAll('a[href]').forEach((a) => {
         const href = a.getAttribute('href')
         
-        // Remove tel: and mailto: links
-        if (href && (href.startsWith('tel:') || href.startsWith('mailto:'))) {
+        // Remove Google Maps links and location links
+        if (href && (
+          href.includes('maps.google.com') ||
+          href.includes('maps.googleapis.com') ||
+          href.includes('google.com/maps') ||
+          href.includes('goo.gl/maps') ||
+          href.includes('maps.app.goo.gl') ||
+          href.toLowerCase().includes('find us on google map') ||
+          href.toLowerCase().includes('find us on map') ||
+          href.toLowerCase().includes('our location') ||
+          href.toLowerCase().includes('get directions') ||
+          (href.includes('q=') && (href.includes('Brooklyn') || href.includes('5300') || href.includes('Kings Highway')))
+        )) {
+          // Remove the link but keep the text
           a.removeAttribute('href')
-          const currentStyle = a.getAttribute('style') || ''
-          a.setAttribute('style', `${currentStyle} pointer-events: none; cursor: default;`.trim())
+          const linkEl = a as HTMLElement
+          linkEl.style.pointerEvents = 'none'
+          linkEl.style.cursor = 'default'
+          linkEl.style.textDecoration = 'none'
+          return
+        }
+        
+        // Replace tel: and mailto: links with dummy data
+        if (href && href.startsWith('tel:')) {
+          const dummyPhone = '+1 (555) 123-4567'
+          a.setAttribute('href', `tel:${dummyPhone.replace(/\s/g, '').replace(/[()]/g, '').replace(/-/g, '')}`)
+        } else if (href && href.startsWith('mailto:')) {
+          const dummyEmail = 'info@rimalweb.com'
+          // Replace old email with dummy email
+          if (href.includes('alluredigital.net')) {
+            a.setAttribute('href', `mailto:${dummyEmail}`)
+          } else {
+            // Keep existing email if it's not alluredigital.net
+            a.setAttribute('href', href.replace(/mailto:[^@]+@alluredigital\.net/gi, `mailto:${dummyEmail}`))
+          }
         } else if (href && href.includes('alluredigital.net')) {
           // Convert alluredigital.net URLs to local Next.js routes
           try {
@@ -380,7 +483,7 @@ export default function PageRenderer({ html }: PageRendererProps) {
               a.setAttribute('href', '/')
             } else {
               // For unknown routes, try to use the path directly
-              a.setAttribute('href', path)
+                a.setAttribute('href', path)
             }
           } catch (e) {
             // If URL parsing fails, try to extract path manually
@@ -527,13 +630,93 @@ export default function PageRenderer({ html }: PageRendererProps) {
         })
         
         // Replace in data attributes that might contain text
-        tempDiv.querySelectorAll('[data-title], [data-text], [data-content]').forEach((el) => {
-          ['data-title', 'data-text', 'data-content'].forEach((attr) => {
+        tempDiv.querySelectorAll('[data-title], [data-text], [data-content], [data-name], [data-label]').forEach((el) => {
+          ['data-title', 'data-text', 'data-content', 'data-name', 'data-label'].forEach((attr) => {
             const value = el.getAttribute(attr)
             if (value && (value.includes('Allure') || value.includes('allure'))) {
               el.setAttribute(attr, value
                 .replace(/Allure Digital/gi, 'Rimalweb')
-                .replace(/AllureDigital/gi, 'Rimalweb'))
+                .replace(/AllureDigital/gi, 'Rimalweb')
+                .replace(/allure digital/gi, 'Rimalweb'))
+            }
+          })
+        })
+        
+        // Replace in aria-labels and other accessibility attributes
+        tempDiv.querySelectorAll('[aria-label], [title], [placeholder]').forEach((el) => {
+          ['aria-label', 'title', 'placeholder'].forEach((attr) => {
+            const value = el.getAttribute(attr)
+            if (value && (value.includes('Allure') || value.includes('allure'))) {
+              el.setAttribute(attr, value
+                .replace(/Allure Digital/gi, 'Rimalweb')
+                .replace(/AllureDigital/gi, 'Rimalweb')
+                .replace(/allure digital/gi, 'Rimalweb'))
+            }
+          })
+        })
+        
+        // Replace in script tags that contain JSON-LD or schema data
+        tempDiv.querySelectorAll('script[type="application/ld+json"]').forEach((script) => {
+          if (script.textContent) {
+            try {
+              const jsonData = JSON.parse(script.textContent)
+              const jsonString = JSON.stringify(jsonData)
+              
+              if (jsonString.includes('Allure') || jsonString.includes('allure')) {
+                // Recursively replace in JSON object
+                const replaceInObject = (obj: any): any => {
+                  if (typeof obj === 'string') {
+                    return obj
+                      .replace(/Allure Digital/gi, 'Rimalweb')
+                      .replace(/AllureDigital/gi, 'Rimalweb')
+                      .replace(/allure digital/gi, 'Rimalweb')
+                      .replace(/alluredigital\.net/gi, 'rimalweb.com')
+                  } else if (Array.isArray(obj)) {
+                    return obj.map(replaceInObject)
+                  } else if (obj && typeof obj === 'object') {
+                    const replaced: any = {}
+                    for (const key in obj) {
+                      replaced[key] = replaceInObject(obj[key])
+                    }
+                    return replaced
+                  }
+                  return obj
+                }
+                
+                const replaced = replaceInObject(jsonData)
+                script.textContent = JSON.stringify(replaced)
+              }
+            } catch (e) {
+              // If JSON parsing fails, do simple string replacement
+              if (script.textContent.includes('Allure') || script.textContent.includes('allure')) {
+                script.textContent = script.textContent
+                  .replace(/Allure Digital/gi, 'Rimalweb')
+                  .replace(/AllureDigital/gi, 'Rimalweb')
+                  .replace(/allure digital/gi, 'Rimalweb')
+                  .replace(/alluredigital\.net/gi, 'rimalweb.com')
+              }
+            }
+          }
+        })
+        
+        // Replace in all other attributes (catch-all)
+        tempDiv.querySelectorAll('*').forEach((el) => {
+          Array.from(el.attributes).forEach((attr) => {
+            // Skip src, href, and other URL attributes (already handled)
+            if (['src', 'href', 'srcset', 'data-src', 'data-srcset'].includes(attr.name)) {
+              return
+            }
+            
+            const value = attr.value
+            if (value && (value.includes('Allure') || value.includes('allure'))) {
+              const replaced = value
+                .replace(/Allure Digital/gi, 'Rimalweb')
+                .replace(/AllureDigital/gi, 'Rimalweb')
+                .replace(/allure digital/gi, 'Rimalweb')
+              
+              if (replaced !== value) {
+                el.setAttribute(attr.name, replaced)
+              }
             }
           })
         })
@@ -541,40 +724,113 @@ export default function PageRenderer({ html }: PageRendererProps) {
         return tempDiv.innerHTML
       }
 
-      // Remove contact info (phone, email, address) before setting content
-      const removeContactInfo = (html: string): string => {
-        // Remove phone numbers (all formats)
-        html = html.replace(/\(212\)\s*301-7615/gi, '')
-        html = html.replace(/212-301-7615/gi, '')
-        html = html.replace(/\(212\)\s*301\s*7615/gi, '')
-        html = html.replace(/212\s*301\s*7615/gi, '')
-        html = html.replace(/tel:[\d\s\-\(\)]+/gi, '')
+      // Replace contact info (phone, email, address) with dummy data
+      const replaceContactInfo = (html: string): string => {
+        // Dummy contact data
+        const dummyPhone = '+1 (555) 123-4567'
+        const dummyEmail = 'info@rimalweb.com'
+        const dummyAddress = '123 Business Street, Suite 100, New York, NY 10001'
         
-        // Remove email addresses
-        html = html.replace(/info@alluredigital\.net/gi, '')
-        html = html.replace(/[a-zA-Z0-9._%+-]+@alluredigital\.net/gi, '')
-        html = html.replace(/mailto:[a-zA-Z0-9._%+-]+@alluredigital\.net/gi, '')
+        // Replace phone numbers (all formats) with dummy phone
+        html = html.replace(/\(212\)\s*301-7615/gi, dummyPhone)
+        html = html.replace(/212-301-7615/gi, dummyPhone)
+        html = html.replace(/\(212\)\s*301\s*7615/gi, dummyPhone)
+        html = html.replace(/212\s*301\s*7615/gi, dummyPhone)
+        html = html.replace(/tel:[\d\s\-\(\)]+/gi, (match) => {
+          // Replace tel: links with dummy phone
+          return match.replace(/[\d\s\-\(\)]+/g, dummyPhone.replace(/\s/g, '-').replace(/[()]/g, ''))
+        })
         
-        // Remove addresses
-        html = html.replace(/5300\s*Kings\s*Highway\s*Brooklyn[^<]*/gi, '')
-        html = html.replace(/Brooklyn,\s*NY\s*11234/gi, '')
+        // Replace email addresses with dummy email
+        html = html.replace(/info@alluredigital\.net/gi, dummyEmail)
+        html = html.replace(/[a-zA-Z0-9._%+-]+@alluredigital\.net/gi, dummyEmail)
+        html = html.replace(/mailto:([a-zA-Z0-9._%+-]+@alluredigital\.net)/gi, `mailto:${dummyEmail}`)
         
-        // Remove contact info from text content
+        // Replace addresses with dummy address
+        html = html.replace(/5300\s*Kings\s*Highway\s*Brooklyn[^<]*/gi, dummyAddress)
+        html = html.replace(/Brooklyn,\s*NY\s*11234/gi, 'New York, NY 10001')
+        html = html.replace(/1000\s*Broadway,\s*Brooklyn,\s*NY\s*11211/gi, dummyAddress)
+        
+        // Replace contact info in text content
         const tempDiv = document.createElement('div')
         tempDiv.innerHTML = html
         tempDiv.querySelectorAll('*').forEach((el) => {
           if (el.textContent) {
             let text = el.textContent
-            text = text.replace(/\(212\)\s*301-7615/gi, '')
-            text = text.replace(/212-301-7615/gi, '')
-            text = text.replace(/info@alluredigital\.net/gi, '')
-            text = text.replace(/5300\s*Kings\s*Highway/gi, '')
-            text = text.replace(/Brooklyn,\s*NY\s*11234/gi, '')
-            if (text !== el.textContent && el.childNodes.length === 1 && el.childNodes[0].nodeType === 3) {
+            const originalText = text
+            
+            // Replace phone numbers
+            text = text.replace(/\(212\)\s*301-7615/gi, dummyPhone)
+            text = text.replace(/212-301-7615/gi, dummyPhone)
+            text = text.replace(/\(212\)\s*301\s*7615/gi, dummyPhone)
+            text = text.replace(/212\s*301\s*7615/gi, dummyPhone)
+            
+            // Replace emails
+            text = text.replace(/info@alluredigital\.net/gi, dummyEmail)
+            text = text.replace(/[a-zA-Z0-9._%+-]+@alluredigital\.net/gi, dummyEmail)
+            
+            // Replace addresses
+            text = text.replace(/5300\s*Kings\s*Highway/gi, '123 Business Street, Suite 100')
+            text = text.replace(/Brooklyn,\s*NY\s*11234/gi, 'New York, NY 10001')
+            text = text.replace(/1000\s*Broadway,\s*Brooklyn,\s*NY\s*11211/gi, dummyAddress)
+            
+            if (text !== originalText && el.childNodes.length === 1 && el.childNodes[0].nodeType === 3) {
               el.textContent = text.trim()
+            } else if (text !== originalText) {
+              // For elements with children, replace in direct text nodes
+              const directTextNodes = Array.from(el.childNodes).filter(node => node.nodeType === Node.TEXT_NODE)
+              directTextNodes.forEach(textNode => {
+                if (textNode.textContent) {
+                  let nodeText = textNode.textContent
+                  const originalNodeText = nodeText
+                  
+                  nodeText = nodeText.replace(/\(212\)\s*301-7615/gi, dummyPhone)
+                  nodeText = nodeText.replace(/212-301-7615/gi, dummyPhone)
+                  nodeText = nodeText.replace(/info@alluredigital\.net/gi, dummyEmail)
+                  nodeText = nodeText.replace(/5300\s*Kings\s*Highway/gi, '123 Business Street, Suite 100')
+                  nodeText = nodeText.replace(/Brooklyn,\s*NY\s*11234/gi, 'New York, NY 10001')
+                  
+                  if (nodeText !== originalNodeText) {
+                    textNode.textContent = nodeText
+                  }
+                }
+              })
             }
           }
         })
+        
+        // Also replace in href attributes (tel: and mailto: links) and remove Google Maps links
+        tempDiv.querySelectorAll('a[href]').forEach((a) => {
+          const href = a.getAttribute('href') || ''
+          
+          // Remove Google Maps links
+          if (href && (
+            href.includes('maps.google.com') ||
+            href.includes('maps.googleapis.com') ||
+            href.includes('google.com/maps') ||
+            href.includes('goo.gl/maps') ||
+            href.includes('maps.app.goo.gl') ||
+            href.toLowerCase().includes('find us on google map') ||
+            href.toLowerCase().includes('find us on map') ||
+            href.toLowerCase().includes('our location') ||
+            href.toLowerCase().includes('get directions') ||
+            (href.includes('q=') && (href.includes('Brooklyn') || href.includes('5300') || href.includes('Kings Highway')))
+          )) {
+            a.removeAttribute('href')
+            const htmlEl = a as HTMLElement
+            htmlEl.style.pointerEvents = 'none'
+            htmlEl.style.cursor = 'default'
+            htmlEl.style.textDecoration = 'none'
+            return
+          }
+          
+          if (href.startsWith('tel:')) {
+            a.setAttribute('href', `tel:${dummyPhone.replace(/\s/g, '').replace(/[()]/g, '').replace(/-/g, '')}`)
+          } else if (href.startsWith('mailto:') && href.includes('alluredigital.net')) {
+            a.setAttribute('href', `mailto:${dummyEmail}`)
+          }
+        })
+        
         return tempDiv.innerHTML
       }
 
@@ -647,6 +903,11 @@ export default function PageRenderer({ html }: PageRendererProps) {
             }
           }
           
+          // Also fix classic background images
+          if (parsed.background_background === 'classic' && parsed.background_image && parsed.background_image.url) {
+            parsed.background_image.url = fixUrlsInObject(parsed.background_image.url)
+          }
+          
           const fixedObj = fixUrlsInObject(parsed)
           const fixedJson = JSON.stringify(fixedObj)
           
@@ -688,7 +949,7 @@ export default function PageRenderer({ html }: PageRendererProps) {
         return `srcset="${fixedSrcset}"`
       })
       
-      // Fix URLs in style background images
+      // Fix URLs in style background images (including inline styles in HTML)
       bodyHtml = bodyHtml.replace(/url\(['"]?([^'")]*(?:alluredigital|rimalweb)\.net[^'")]*)['"]?\)/gi, (match, url) => {
         // Convert rimalweb.net back to alluredigital.net for filename lookup
         const urlToFix = url.includes('rimalweb.net') 
@@ -696,6 +957,15 @@ export default function PageRenderer({ html }: PageRendererProps) {
           : url
         const fixed = fixAssetUrl(urlToFix)
         return `url('${fixed}')`
+      })
+      
+      // Also fix background-image in style attributes directly
+      bodyHtml = bodyHtml.replace(/background-image:\s*url\(['"]?([^'")]*(?:alluredigital|rimalweb)\.net[^'")]*)['"]?\)/gi, (match, url) => {
+        const urlToFix = url.includes('rimalweb.net') 
+          ? url.replace(/rimalweb\.net/gi, 'alluredigital.net')
+          : url
+        const fixed = fixAssetUrl(urlToFix)
+        return `background-image: url('${fixed}')`
       })
       
       // Also fix any rimalweb.net URLs that might have been replaced in HTML
@@ -708,8 +978,133 @@ export default function PageRenderer({ html }: PageRendererProps) {
       
       // Now replace branding (this won't affect already-fixed URLs)
       let cleanedHtml = replaceBranding(bodyHtml)
-      cleanedHtml = removeContactInfo(cleanedHtml)
+      cleanedHtml = replaceContactInfo(cleanedHtml)
+      
+      // Modify homepage headings to avoid copyright (similar but different wording)
+      const modifyHomepageHeadings = (html: string): string => {
+        const tempDiv = document.createElement('div')
+        tempDiv.innerHTML = html
+        
+        // Heading replacements (similar meaning, different wording)
+        const headingReplacements: { [key: string]: string } = {
+          'Let Us Help You': 'We\'re Here to Assist You',
+          'Get a Tailored Approach with our Digital Marketing Agency in Brooklyn': 'Experience Customized Solutions with our Digital Marketing Agency in New York',
+          'Get a Tailored Approach with our Digital Marketing Agency in Brooklyn NY': 'Experience Customized Solutions with our Digital Marketing Agency in New York',
+          'Providing Innovative Digital Solutions for Clients since 2010': 'Delivering Cutting-Edge Digital Solutions for Businesses since 2015',
+          'A Glimpse into the Brands That Became Successful with Us': 'Discover the Companies That Achieved Success with Us',
+          'Our Working Philosophy': 'Our Approach to Success',
+          'SEO - Turn Your Web Traffic Into Profits with SEO': 'SEO - Transform Your Website Visitors Into Revenue with SEO',
+          'Unleash Your Business\'s Digital Potential with Our Services': 'Unlock Your Company\'s Digital Growth with Our Services',
+          'WE SPECIALIZE IN': 'OUR EXPERTISE INCLUDES',
+          'How Our Digital Marketing Creates a Strong Impact': 'How Our Digital Marketing Drives Powerful Results',
+          'Think Big\nPlan Smart\nExecute Flawlessly': 'Dream Big\nStrategize Wisely\nDeliver Excellence'
+        }
+        
+        // Replace in all heading elements
+        tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6, .elementor-heading-title, .ha-gradient-heading, .ep-heading').forEach((heading) => {
+          if (heading.textContent) {
+            let text = heading.textContent.trim()
+            const originalText = text
+            
+            // Check for exact matches first
+            if (headingReplacements[text]) {
+              heading.textContent = headingReplacements[text]
+              return
+            }
+            
+            // Check for partial matches and replace
+            for (const [original, replacement] of Object.entries(headingReplacements)) {
+              if (text.includes(original)) {
+                text = text.replace(original, replacement)
+                if (text !== originalText) {
+                  heading.textContent = text
+                  return
+                }
+              }
+            }
+          }
+        })
+        
+        // Also replace in data attributes that might contain heading text (like animated headlines)
+        tempDiv.querySelectorAll('[data-settings]').forEach((el) => {
+          const settings = el.getAttribute('data-settings')
+          if (settings && settings.includes('rotating_text')) {
+            try {
+              const decoded = settings
+                .replace(/&amp;/g, '&')
+                .replace(/&quot;/g, '"')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&#39;/g, "'")
+              
+              const parsed = JSON.parse(decoded)
+              if (parsed.rotating_text) {
+                let rotatingText = parsed.rotating_text
+                if (rotatingText.includes('Think Big')) {
+                  rotatingText = rotatingText.replace(/Think Big[\s\n]*Plan Smart[\s\n]*Execute Flawlessly/gi, 'Dream Big\nStrategize Wisely\nDeliver Excellence')
+                  parsed.rotating_text = rotatingText
+                  
+                  const fixedJson = JSON.stringify(parsed)
+                  const reEncoded = fixedJson
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                  
+                  el.setAttribute('data-settings', reEncoded)
+                }
+              }
+            } catch (e) {
+              // Silently continue if JSON parsing fails
+            }
+          }
+        })
+        
+        return tempDiv.innerHTML
+      }
+      
+      // Check if this is the homepage (by checking URL or specific homepage content)
+      const isHomepage = typeof window !== 'undefined' && (
+        window.location.pathname === '/' || 
+        window.location.pathname === '' ||
+        bodyHtml.includes('Get a Tailored Approach') ||
+        bodyHtml.includes('Welcome to') && bodyHtml.includes('Breaking Through')
+      )
+      
+      // Only modify headings on homepage
+      if (isHomepage) {
+        cleanedHtml = modifyHomepageHeadings(cleanedHtml)
+      }
+      
       containerRef.current.innerHTML = cleanedHtml
+      
+      // Remove elementor-invisible class from footer elements so they show immediately
+      if (containerRef.current) {
+        const footer = containerRef.current.querySelector('footer')
+        if (footer) {
+          // Remove invisible class from all footer elements
+          footer.querySelectorAll('.elementor-invisible').forEach((el) => {
+            el.classList.remove('elementor-invisible')
+            // Also ensure visibility
+            const htmlEl = el as HTMLElement
+            if (htmlEl.style) {
+              htmlEl.style.visibility = 'visible'
+              htmlEl.style.opacity = '1'
+            }
+          })
+          
+          // Also remove from footer sections
+          footer.querySelectorAll('[class*="elementor-invisible"]').forEach((el) => {
+            el.classList.remove('elementor-invisible')
+            const htmlEl = el as HTMLElement
+            if (htmlEl.style) {
+              htmlEl.style.visibility = 'visible'
+              htmlEl.style.opacity = '1'
+            }
+          })
+        }
+      }
 
       // Handle missing images - add placeholders for all missing images
       if (containerRef.current) {
@@ -826,10 +1221,40 @@ export default function PageRenderer({ html }: PageRendererProps) {
           }
         })
         
-        // Also handle data-settings background slideshow images
+        // Also handle data-settings background slideshow images - FORCE display
+        // First, find homepage hero section and force about-banner image
+        const homepageHeroSection = containerRef.current.querySelector('[data-settings*="background_slideshow_gallery"], [data-settings*="about-banner"]')
+        if (homepageHeroSection) {
+          const heroEl = homepageHeroSection as HTMLElement
+          let aboutBannerUrl = fixAssetUrl('https://alluredigital.net/wp-content/uploads/2022/12/about-banner.png')
+          // Add cache-busting parameter to force reload
+          aboutBannerUrl += (aboutBannerUrl.includes('?') ? '&' : '?') + 'v=' + Date.now()
+          
+          // Force remove slideshow
+          const slideshow = heroEl.querySelector('.elementor-background-slideshow')
+          if (slideshow) {
+            slideshow.remove()
+          }
+          
+          // Force set background image - medium size (45%) with cache-busting
+          heroEl.style.setProperty('background-image', `url('${aboutBannerUrl}')`, 'important')
+          heroEl.style.setProperty('background-size', '45%', 'important')
+          heroEl.style.setProperty('background-position', 'center', 'important')
+          heroEl.style.setProperty('background-repeat', 'no-repeat', 'important')
+          heroEl.style.setProperty('min-height', '500px', 'important')
+          
+          // Preload image with cache-busting
+          const heroImg = new Image()
+          heroImg.onload = function() {
+            heroEl.style.setProperty('background-image', `url('${aboutBannerUrl}')`, 'important')
+            heroEl.style.setProperty('background-size', '45%', 'important')
+          }
+          heroImg.src = aboutBannerUrl
+        }
+        
         containerRef.current.querySelectorAll('[data-settings]').forEach((el) => {
           const settings = el.getAttribute('data-settings')
-          if (settings && settings.includes('background_slideshow_gallery')) {
+          if (settings && (settings.includes('background_slideshow_gallery') || settings.includes('background_image'))) {
             try {
               // Decode HTML entities properly
               const decoded = settings
@@ -841,10 +1266,48 @@ export default function PageRenderer({ html }: PageRendererProps) {
               
               const parsed = JSON.parse(decoded)
               
-              // If this is the home page hero section with slideshow, replace with about-banner
-              if (parsed.background_background === 'classic' && parsed.background_image && parsed.background_image.url && parsed.background_image.url.includes('about-banner')) {
-                const element = el as HTMLElement
-                const aboutBannerUrl = fixAssetUrl(parsed.background_image.url)
+              // Handle hero section background images - ensure they display properly
+              const element = el as HTMLElement
+              
+              // Handle classic background images
+              if (parsed.background_background === 'classic' && parsed.background_image && parsed.background_image.url) {
+                const bgUrl = fixAssetUrl(parsed.background_image.url)
+                
+                // Force background image to display immediately
+                element.style.backgroundImage = `url('${bgUrl}')`
+                element.style.backgroundSize = 'cover'
+                element.style.backgroundPosition = 'center'
+                element.style.backgroundRepeat = 'no-repeat'
+                element.style.minHeight = '500px' // Ensure section has height
+                
+                // Preload and verify image loads
+                const testImg = new Image()
+                testImg.onload = function() {
+                  element.style.backgroundImage = `url('${bgUrl}')`
+                  element.style.opacity = '1'
+                }
+                testImg.onerror = function() {
+                  console.warn('Background image failed to load:', bgUrl)
+                  // Try alternative image paths
+                  const altUrl = bgUrl.replace(/-\d+x\d+/, '') // Remove size suffix
+                  if (altUrl !== bgUrl) {
+                    element.style.backgroundImage = `url('${altUrl}')`
+                  }
+                }
+                testImg.src = bgUrl
+              }
+              
+              // Check if this is homepage hero section (has slideshow or about-banner)
+              const isHomepageHero = (
+                (parsed.background_background === 'slideshow' && parsed.background_slideshow_gallery) ||
+                (parsed.background_background === 'classic' && parsed.background_image && parsed.background_image.url && parsed.background_image.url.includes('about-banner'))
+              )
+              
+              // If this is the home page hero section, replace with about-banner
+              if (isHomepageHero) {
+                let aboutBannerUrl = fixAssetUrl('https://alluredigital.net/wp-content/uploads/2022/12/about-banner.png')
+                // Add cache-busting parameter to force reload
+                aboutBannerUrl += (aboutBannerUrl.includes('?') ? '&' : '?') + 'v=' + Date.now()
                 
                 // Remove slideshow elements if they exist
                 const slideshow = element.querySelector('.elementor-background-slideshow')
@@ -852,30 +1315,152 @@ export default function PageRenderer({ html }: PageRendererProps) {
                   slideshow.remove()
                 }
                 
-                // Set static background image - make it smaller (70% size)
-                element.style.backgroundImage = `url('${aboutBannerUrl}')`
-                element.style.backgroundSize = '70%'
-                element.style.backgroundPosition = 'center'
-                element.style.backgroundRepeat = 'no-repeat'
-              } else if (parsed.background_slideshow_gallery && Array.isArray(parsed.background_slideshow_gallery)) {
-                parsed.background_slideshow_gallery.forEach((item: any) => {
-                  if (item && item.url && (item.url.includes('/assets/') || item.url.includes('alluredigital.net') || item.url.includes('rimalweb.net'))) {
-                    const testImg = new Image()
-                    testImg.onerror = function() {
-                      // If slideshow image fails, we'll let the background fallback handle it
-                      const element = el as HTMLElement
-                      if (!element.style.background) {
-                        element.style.background = 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #f5f5f5 100%)'
-                        element.style.backgroundColor = '#f5f5f5'
-                      }
-                    }
-                    testImg.src = item.url
+                // Force set static background image - medium size (45% size) with cache-busting
+                element.style.setProperty('background-image', `url('${aboutBannerUrl}')`, 'important')
+                element.style.setProperty('background-size', '45%', 'important')
+                element.style.setProperty('background-position', 'center', 'important')
+                element.style.setProperty('background-repeat', 'no-repeat', 'important')
+                element.style.setProperty('min-height', '500px', 'important')
+                element.style.setProperty('opacity', '1', 'important')
+                
+                // Also set on the section element directly
+                const section = element.closest('.elementor-section')
+                if (section) {
+                  const sectionEl = section as HTMLElement
+                  sectionEl.style.setProperty('background-image', `url('${aboutBannerUrl}')`, 'important')
+                  sectionEl.style.setProperty('background-size', '45%', 'important')
+                  sectionEl.style.setProperty('background-position', 'center', 'important')
+                  sectionEl.style.setProperty('background-repeat', 'no-repeat', 'important')
+                }
+                
+                // Preload image and verify with cache-busting
+                const testImg = new Image()
+                testImg.onload = function() {
+                  element.style.setProperty('background-image', `url('${aboutBannerUrl}')`, 'important')
+                  element.style.setProperty('background-size', '45%', 'important')
+                  element.style.setProperty('opacity', '1', 'important')
+                  if (section) {
+                    const sectionEl = section as HTMLElement
+                    sectionEl.style.setProperty('background-image', `url('${aboutBannerUrl}')`, 'important')
+                    sectionEl.style.setProperty('background-size', '45%', 'important')
                   }
-                })
+                }
+                testImg.onerror = function() {
+                  console.warn('About banner image failed to load:', aboutBannerUrl)
+                  // Try alternative path without size suffix
+                  const altUrl = aboutBannerUrl.replace(/-\d+x\d+/, '')
+                  if (altUrl !== aboutBannerUrl) {
+                    element.style.setProperty('background-image', `url('${altUrl}')`, 'important')
+                    testImg.src = altUrl
+                  }
+                }
+                testImg.src = aboutBannerUrl
+              } else if (parsed.background_background === 'slideshow' && parsed.background_slideshow_gallery && Array.isArray(parsed.background_slideshow_gallery) && parsed.background_slideshow_gallery.length > 0) {
+                // Handle slideshow background images - ensure first image shows immediately
+                const firstImage = parsed.background_slideshow_gallery[0]
+                if (firstImage && firstImage.url) {
+                  const firstImageUrl = fixAssetUrl(firstImage.url)
+                  
+                  // Force first image as background immediately (before slideshow starts)
+                  element.style.backgroundImage = `url('${firstImageUrl}')`
+                  element.style.backgroundSize = 'cover'
+                  element.style.backgroundPosition = 'center'
+                  element.style.backgroundRepeat = 'no-repeat'
+                  element.style.minHeight = '500px' // Ensure section has height
+                  
+                  // Verify first image loads
+                  const firstImg = new Image()
+                  firstImg.onload = function() {
+                    element.style.backgroundImage = `url('${firstImageUrl}')`
+                    element.style.opacity = '1'
+                  }
+                  firstImg.onerror = function() {
+                    console.warn('First slideshow image failed:', firstImageUrl)
+                    // Try without size suffix
+                    const altUrl = firstImageUrl.replace(/-\d+x\d+/, '')
+                    if (altUrl !== firstImageUrl) {
+                      element.style.backgroundImage = `url('${altUrl}')`
+                      firstImg.src = altUrl
+                    }
+                  }
+                  firstImg.src = firstImageUrl
+                  
+                  // Preload all slideshow images
+                  parsed.background_slideshow_gallery.forEach((item: any, index: number) => {
+                    if (item && item.url) {
+                      const imageUrl = fixAssetUrl(item.url)
+                      const testImg = new Image()
+                      testImg.onload = function() {
+                        // Image loaded successfully - update background if this is current slide
+                        if (index === 0) {
+                          element.style.backgroundImage = `url('${imageUrl}')`
+                        }
+                      }
+                      testImg.onerror = function() {
+                        console.warn('Slideshow image failed to load:', imageUrl)
+                        // Try alternative path
+                        const altUrl = imageUrl.replace(/-\d+x\d+/, '')
+                        if (altUrl !== imageUrl) {
+                          testImg.src = altUrl
+                        }
+                      }
+                      testImg.src = imageUrl
+                    }
+                  })
+                }
               }
             } catch (e) {
-              // Silently ignore JSON parse errors to prevent breaking the page
-              // The slideshow will just use the original URLs
+              console.warn('Failed to parse data-settings for background:', e)
+            }
+          }
+        })
+        
+        // Fix slideshow slide images directly (they have inline styles)
+        containerRef.current.querySelectorAll('.elementor-background-slideshow__slide__image, .swiper-slide').forEach((slide) => {
+          const slideEl = slide as HTMLElement
+          const bgImage = slideEl.style.backgroundImage || slideEl.getAttribute('style')
+          
+          if (bgImage && bgImage.includes('alluredigital.net')) {
+            // Extract URL from style
+            const urlMatch = bgImage.match(/url\(['"]?([^'")]+)['"]?\)/)
+            if (urlMatch && urlMatch[1]) {
+              const fixedUrl = fixAssetUrl(urlMatch[1])
+              slideEl.style.backgroundImage = `url('${fixedUrl}')`
+              slideEl.style.backgroundSize = 'cover'
+              slideEl.style.backgroundPosition = 'center'
+              
+              // Preload image
+              const testImg = new Image()
+              testImg.onload = function() {
+                slideEl.style.backgroundImage = `url('${fixedUrl}')`
+                slideEl.style.opacity = '1'
+              }
+              testImg.onerror = function() {
+                // Try without size suffix
+                const altUrl = fixedUrl.replace(/-\d+x\d+/, '')
+                if (altUrl !== fixedUrl) {
+                  slideEl.style.backgroundImage = `url('${altUrl}')`
+                }
+              }
+              testImg.src = fixedUrl
+            }
+          }
+        })
+        
+        // Also check for hero section by class/id and force background images
+        containerRef.current.querySelectorAll('.elementor-section, section').forEach((section) => {
+          const sectionEl = section as HTMLElement
+          const computedStyle = window.getComputedStyle(sectionEl)
+          const bgImage = computedStyle.backgroundImage
+          
+          // If section has a background image URL that needs fixing
+          if (bgImage && bgImage !== 'none' && bgImage.includes('alluredigital.net')) {
+            const urlMatch = bgImage.match(/url\(['"]?([^'")]+)['"]?\)/)
+            if (urlMatch && urlMatch[1]) {
+              const fixedUrl = fixAssetUrl(urlMatch[1])
+              sectionEl.style.backgroundImage = `url('${fixedUrl}')`
+              sectionEl.style.backgroundSize = 'cover'
+              sectionEl.style.backgroundPosition = 'center'
             }
           }
         })
@@ -971,91 +1556,33 @@ export default function PageRenderer({ html }: PageRendererProps) {
         }
       })
 
-      // Wait for CSS to load first, then scripts, then show content
+      // Load CSS and scripts in background (no blocking, content shows immediately)
+      // All assets are preloaded above, so they'll be cached
       const allPromises = [...stylePromises, ...scriptPromises]
       
       if (allPromises.length > 0) {
+        // Load assets in background without blocking UI
         Promise.all(allPromises).then(() => {
-          // Trigger DOMContentLoaded for scripts that depend on it
-          if (document.readyState === 'loading') {
-            document.dispatchEvent(new Event('DOMContentLoaded'))
-          }
-          
-          // Trigger jQuery ready if jQuery is loaded
-          if (typeof window !== 'undefined' && (window as any).jQuery) {
-            (window as any).jQuery(document).ready(() => {
-              // Elementor and other scripts will initialize
-            })
-          }
-          
-          // Wait a bit for CSS to apply
-          setTimeout(() => {
-            setIsLoading(false)
-          }, 100)
+        // Trigger DOMContentLoaded for scripts that depend on it
+        if (document.readyState === 'loading') {
+          document.dispatchEvent(new Event('DOMContentLoaded'))
+        }
+        
+        // Trigger jQuery ready if jQuery is loaded
+        if (typeof window !== 'undefined' && (window as any).jQuery) {
+          (window as any).jQuery(document).ready(() => {
+            // Elementor and other scripts will initialize
+          })
+        }
         }).catch(() => {
-          // Even if assets fail, hide loading after a delay
-          setTimeout(() => {
-            setIsLoading(false)
-          }, 500)
-        })
-      } else {
-        // No assets to load, wait a bit for initial render
-        setTimeout(() => {
-          setIsLoading(false)
-        }, 200)
+          // Silently continue even if some assets fail
+      })
       }
     }
   }, [html])
 
   return (
-    <>
-      {isLoading && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: '#ffffff',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          fontFamily: 'system-ui, -apple-system, sans-serif'
-        }}>
-          <div style={{
-            width: '60px',
-            height: '60px',
-            border: '4px solid #f3f3f3',
-            borderTop: '4px solid #dc2626',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            marginBottom: '20px'
-          }} />
-          <div style={{
-            color: '#dc2626',
-            fontSize: '18px',
-            fontWeight: 500
-          }}>
-            Loading Rimalweb...
-          </div>
-          <style>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
-        </div>
-      )}
-      <div 
-        ref={containerRef} 
-        style={{
-          opacity: isLoading ? 0 : 1,
-          transition: 'opacity 0.3s ease-in-out'
-        }}
-      />
-    </>
+    <div ref={containerRef} />
   )
 }
 

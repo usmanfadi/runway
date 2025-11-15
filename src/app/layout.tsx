@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Allure Digital - Complete Replica',
-  description: 'Exact 1:1 replica',
+  title: 'Rimalweb',
+  description: 'Rimalweb - Digital Marketing Services',
 }
 
 export default function RootLayout({
