@@ -208,8 +208,9 @@ export default function PageRenderer({ html }: PageRendererProps) {
           
           // Make images smaller in Welcome section
           if (isWelcomeSection) {
-            const originalWidth = parseInt(img.getAttribute('width') || img.offsetWidth.toString() || '200')
-            const originalHeight = parseInt(img.getAttribute('height') || img.offsetHeight.toString() || '50')
+            const imgElement = img as HTMLImageElement
+            const originalWidth = parseInt(img.getAttribute('width') || (imgElement.offsetWidth ? imgElement.offsetWidth.toString() : '200'))
+            const originalHeight = parseInt(img.getAttribute('height') || (imgElement.offsetHeight ? imgElement.offsetHeight.toString() : '50'))
             
             // Reduce size by 30% for Welcome section images
             const width = Math.round(originalWidth * 0.7)
@@ -244,8 +245,9 @@ export default function PageRenderer({ html }: PageRendererProps) {
           if (isLogoImage && (isInHeader || isInFooter || hasLogoClass)) {
             const parent = img.parentElement
             if (parent) {
-              const originalWidth = parseInt(img.getAttribute('width') || img.offsetWidth.toString() || '200')
-              const originalHeight = parseInt(img.getAttribute('height') || img.offsetHeight.toString() || '50')
+              const imgElement = img as HTMLImageElement
+              const originalWidth = parseInt(img.getAttribute('width') || (imgElement.offsetWidth ? imgElement.offsetWidth.toString() : '200'))
+              const originalHeight = parseInt(img.getAttribute('height') || (imgElement.offsetHeight ? imgElement.offsetHeight.toString() : '50'))
               
               // Increase size by 20% for header/footer logos
               const width = Math.round(originalWidth * 1.2)
