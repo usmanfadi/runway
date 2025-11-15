@@ -1,0 +1,14 @@
+{
+  "url": "https://fd.cleantalk.org/api3.0/frontend_data",
+  "body": {
+    "event_token": "dccfa20cc69465e9aa22f5dc918b3dd153ac43d0edaa22ad2d7e5647b038712c",
+    "data": {
+      "operation_status": "SUCCESS"
+    },
+    "error_no": 0,
+    "error_message": "",
+    "error_trace": "",
+    "host_name": "fd.cleantalk.org",
+    "page_url": "https://alluredigital.net/careers"
+  }
+}

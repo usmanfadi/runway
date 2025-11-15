@@ -1,0 +1,62 @@
+index,url,html_file,title,screenshot,video,assets_count,notes
+1,https://alluredigital.net/#content,D:\usman\allure_out\pages\page_0001.html,Allure Digital | #1 Brooklyn SEO and Web Design Agency,D:\usman\allure_out\screenshots\page_0001.png,,71,
+2,https://alluredigital.net/contact-us/,D:\usman\allure_out\pages\page_0002.html,Contact Us | (212) 301-7615 | Allure Digital,D:\usman\allure_out\screenshots\page_0002.png,,34,
+3,https://alluredigital.net/#,,,,,0,"error: Page.goto: Timeout 45000ms exceeded.
+Call log:
+  - navigating to ""https://alluredigital.net/#"", waiting until ""networkidle""
+"
+4,https://alluredigital.net/,D:\usman\allure_out\pages\page_0004.html,Allure Digital | #1 Brooklyn SEO and Web Design Agency,D:\usman\allure_out\screenshots\page_0004.png,,73,
+5,https://alluredigital.net/local-seo/,D:\usman\allure_out\pages\page_0005.html,Brooklyn Local SEO Services | Brooklyn SEO Consultants | Allure Digital,D:\usman\allure_out\screenshots\page_0005.png,,36,
+6,https://alluredigital.net/google-map-optimization/,D:\usman\allure_out\pages\page_0006.html,Google Map Optimization | Google Maps SEO Experts Brooklyn NY | Allure Digital,D:\usman\allure_out\screenshots\page_0006.png,,34,
+7,https://alluredigital.net/small-business-seo-service/,D:\usman\allure_out\pages\page_0007.html,#1 Brooklyn SEO Company for Small Business | Allure Digital,D:\usman\allure_out\screenshots\page_0007.png,,32,
+8,https://alluredigital.net/local-business-citations-building/,D:\usman\allure_out\pages\page_0008.html,Local Business Citations Building Service | (212) 301-7615 | Allure Digital,D:\usman\allure_out\screenshots\page_0008.png,,32,
+9,https://alluredigital.net/landing-page-optimization/,D:\usman\allure_out\pages\page_0009.html,Landing Page Optimization | Conversion Rate Optimization | Allure Digital,D:\usman\allure_out\screenshots\page_0009.png,,30,
+10,https://alluredigital.net/technical-seo-service/,D:\usman\allure_out\pages\page_0010.html,Technical SEO Services | Fine Tune Your Website's SEO | Allure Digital,D:\usman\allure_out\screenshots\page_0010.png,,29,
+11,https://alluredigital.net/ppc-advertising/,D:\usman\allure_out\pages\page_0011.html,A Result Driven PPC Advertising Company in Brooklyn | Allure Digital,D:\usman\allure_out\screenshots\page_0011.png,,33,
+12,https://alluredigital.net/google-ads-management/,,,,,0,"error: Page.goto: Timeout 45000ms exceeded.
+Call log:
+  - navigating to ""https://alluredigital.net/google-ads-management/"", waiting until ""networkidle""
+"
+13,https://alluredigital.net/wordpress-development/,D:\usman\allure_out\pages\page_0013.html,Leading WordPress Web Development Agency Brooklyn | Allure Digital,D:\usman\allure_out\screenshots\page_0013.png,,39,
+14,https://alluredigital.net/shopify-development/,,,,,0,"error: Page.goto: Timeout 45000ms exceeded.
+Call log:
+  - navigating to ""https://alluredigital.net/shopify-development/"", waiting until ""networkidle""
+"
+15,https://alluredigital.net/bricks-builder-development/,D:\usman\allure_out\pages\page_0015.html,Bricks Builder Development | Web Development Agency | Allure Digital,D:\usman\allure_out\screenshots\page_0015.png,,52,
+16,https://alluredigital.net/social-media-management/,,,,,0,"error: Page.goto: Timeout 45000ms exceeded.
+Call log:
+  - navigating to ""https://alluredigital.net/social-media-management/"", waiting until ""networkidle""
+"
+17,https://alluredigital.net/crm-development/,D:\usman\allure_out\pages\page_0017.html,CRM Development | (212) 301-7615 | Allure Digital,D:\usman\allure_out\screenshots\page_0017.png,,34,
+18,https://alluredigital.net/who-we-are/,D:\usman\allure_out\pages\page_0018.html,Allure Digital | Digital Marketing and Web Development Agency in Brooklyn,D:\usman\allure_out\screenshots\page_0018.png,,50,
+19,https://alluredigital.net/work/,D:\usman\allure_out\pages\page_0019.html,Our Work | Digital Marketing Case Studies & Success Stories,D:\usman\allure_out\screenshots\page_0019.png,,33,
+20,https://alluredigital.net/blog/,D:\usman\allure_out\pages\page_0020.html,Blogs | Allure Digital,D:\usman\allure_out\screenshots\page_0020.png,,36,
+21,https://alluredigital.net/#Scroll,D:\usman\allure_out\pages\page_0021.html,Allure Digital | #1 Brooklyn SEO and Web Design Agency,D:\usman\allure_out\screenshots\page_0021.png,,72,
+22,https://alluredigital.net/appian-development/,,,,,0,"error: Page.goto: Timeout 45000ms exceeded.
+Call log:
+  - navigating to ""https://alluredigital.net/appian-development/"", waiting until ""networkidle""
+"
+23,https://alluredigital.net/portfolio/,D:\usman\allure_out\pages\page_0023.html,Portfolio | Allure Digital,D:\usman\allure_out\screenshots\page_0023.png,,41,
+24,https://alluredigital.net/careers,D:\usman\allure_out\pages\page_0024.html,Allure Digital | Digital Marketing and Web Development Agency in Brooklyn,D:\usman\allure_out\screenshots\page_0024.png,,41,
+25,https://alluredigital.net/careers/,D:\usman\allure_out\pages\page_0025.html,Allure Digital | Digital Marketing and Web Development Agency in Brooklyn,D:\usman\allure_out\screenshots\page_0025.png,,41,
+26,https://alluredigital.net/blog/#,allure_out\pages\page_0026.html,Blogs | Allure Digital,allure_out\screenshots\page_0026.png,,18,
+27,https://alluredigital.net/blog/#content,allure_out\pages\page_0027.html,Blogs | Allure Digital,allure_out\screenshots\page_0027.png,,18,
+28,https://alluredigital.net/blog/digital-marketing-strategies-that-work-2025/,allure_out\pages\page_0028.html,5 Digital Marketing Strategies That Actually Work in 2025 | Allure Digital,allure_out\screenshots\page_0028.png,,15,
+29,https://alluredigital.net/blog/everything-you-need-to-know-about-how-digital-marketing-works/,allure_out\pages\page_0029.html,How Digital Marketing Works - Experts Guide,allure_out\screenshots\page_0029.png,,15,
+30,https://alluredigital.net/blog/how-small-businesses-can-dominate-local-search/,allure_out\pages\page_0030.html,Local SEO for Beginners | Complete 2025 Guide | Allure Digital,allure_out\screenshots\page_0030.png,,15,
+31,https://alluredigital.net/blog/how-to-find-trending-keywords-seo/,allure_out\pages\page_0031.html,How To Find Trending Keywords for SEO | Allure Digital,allure_out\screenshots\page_0031.png,,15,
+32,https://alluredigital.net/blog/june-2025-google-core-update/,allure_out\pages\page_0032.html,Google June 2025 Core Update Explained | Allure Digital,allure_out\screenshots\page_0032.png,,15,
+33,https://alluredigital.net/blog/search-engines-vs-large-language-models/,allure_out\pages\page_0033.html,Search Engines vs. Large Language Models | 2025 Analysis,allure_out\screenshots\page_0033.png,,15,
+34,https://alluredigital.net/blog/seo-trends-for-2025/,allure_out\pages\page_0034.html,SEO Trends for 2025 | Allure Digital,allure_out\screenshots\page_0034.png,,15,
+35,https://alluredigital.net/blog/seo-vs-ppc-pros-and-cons/,allure_out\pages\page_0035.html,SEO vs PPC | What to Choose in 2026 | Allure Digital,allure_out\screenshots\page_0035.png,,15,
+36,https://alluredigital.net/blog/voice-search-importance-in-marketing-seo/,allure_out\pages\page_0036.html,The Future of SEO: Why Voice Search Matters in Marketing | Allure Digital,allure_out\screenshots\page_0036.png,,15,
+37,https://alluredigital.net/portfolio/#,allure_out\pages\page_0037.html,Portfolio | Allure Digital,allure_out\screenshots\page_0037.png,,23,
+38,https://alluredigital.net/portfolio/#content,allure_out\pages\page_0038.html,Portfolio | Allure Digital,allure_out\screenshots\page_0038.png,,23,
+39,https://alluredigital.net/work/#,allure_out\pages\page_0039.html,Our Work | Digital Marketing Case Studies & Success Stories,allure_out\screenshots\page_0039.png,,15,
+40,https://alluredigital.net/work/#content,allure_out\pages\page_0040.html,Our Work | Digital Marketing Case Studies & Success Stories,allure_out\screenshots\page_0040.png,,15,
+41,https://alluredigital.net/work/atoz-renovations-creating-timeless-homes/,allure_out\pages\page_0041.html,ATOZ Renovations NYC | Digital Marketing Success Story,allure_out\screenshots\page_0041.png,,23,
+42,https://alluredigital.net/work/brothers-fix/,allure_out\pages\page_0042.html,Brothers Fix | Digital Marketing Success Stories,allure_out\screenshots\page_0042.png,,16,
+43,https://alluredigital.net/work/flatrate-junk-removal/,allure_out\pages\page_0043.html,Flatrate Junk Removal | Digital Marketing Success Story,allure_out\screenshots\page_0043.png,,18,
+44,https://alluredigital.net/work/nyc-wheel-professionals/,allure_out\pages\page_0044.html,NYC Wheel Professionals | Digital Marketing Success Story,allure_out\screenshots\page_0044.png,,15,
+45,https://alluredigital.net/work/quality-1st-towing/,allure_out\pages\page_0045.html,Quality 1st Towing | Digital Marketing Success Story,allure_out\screenshots\page_0045.png,,16,
+46,https://alluredigital.net/work/setupnyc/,allure_out\pages\page_0046.html,Setup NYC | Digital Marketing Success Story,allure_out\screenshots\page_0046.png,,19,

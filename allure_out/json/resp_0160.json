@@ -1,0 +1,9 @@
+{
+  "url": "https://www.google.com.pk/pagead/attribution/wcm?cc=ZZ&dn=2123017615&cl=rt8WCPnM9a0ZEKjWqdc9&dma=0",
+  "body": {
+    "backoff": 3600,
+    "errorCode": 2,
+    "refreshDuration": 10800000,
+    "refreshPeriod": 260000
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "url": "https://pro.ip-api.com/json/?key=4aPS27SAdIyXc0H",
+  "body": {
+    "as": "AS141421 MUX BROADBAND (PRIVATE) LIMITED",
+    "city": "Multan",
+    "country": "Pakistan",
+    "countryCode": "PK",
+    "isp": "MUX BROADBAND (PRIVATE) LIMITED",
+    "lat": 30.2131,
+    "lon": 71.5451,
+    "org": "MUX Broadband (private) Limited",
+    "query": "103.84.56.101",
+    "region": "PB",
+    "regionName": "Punjab",
+    "status": "success",
+    "timezone": "Asia/Karachi",
+    "zip": "59030"
+  }
+}

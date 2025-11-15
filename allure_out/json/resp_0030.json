@@ -1,0 +1,14 @@
+{
+  "url": "https://fd.cleantalk.org/api3.0/frontend_data",
+  "body": {
+    "event_token": "ad492b531a6ec0c5740436d49f4242982bb7d7d2cb9875dd109043318c48b831",
+    "data": {
+      "operation_status": "SUCCESS"
+    },
+    "error_no": 0,
+    "error_message": "",
+    "error_trace": "",
+    "host_name": "fd.cleantalk.org",
+    "page_url": "https://alluredigital.net/small-business-seo-service"
+  }
+}
