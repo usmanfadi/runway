@@ -106,24 +106,31 @@ export default function PageRenderer({ html }: PageRendererProps) {
 
       // Inject meta tags and title (with branding replacement)
       head.querySelectorAll('meta, title').forEach((el) => {
-        const existing = document.querySelector(
-          el.tagName === 'META'
-            ? `meta[name="${el.getAttribute('name') || el.getAttribute('property')}"]`
-            : 'title'
-        )
-        if (!existing) {
-          const clone = el.cloneNode(true) as HTMLElement
+        if (el.tagName === 'TITLE') {
+          // Always update title, whether it exists or not
+          const existingTitle = document.querySelector('title')
+          const titleText = el.textContent || ''
+          const replacedText = titleText
+            .replace(/Allure Digital/gi, 'Rimalweb')
+            .replace(/AllureDigital/gi, 'Rimalweb')
+            .replace(/allure digital/gi, 'Rimalweb')
           
-          // Replace branding in title
-          if (el.tagName === 'TITLE' && clone.textContent) {
-            clone.textContent = clone.textContent
-              .replace(/Allure Digital/gi, 'Rimalweb')
-              .replace(/AllureDigital/gi, 'Rimalweb')
-              .replace(/allure digital/gi, 'Rimalweb')
+          if (existingTitle) {
+            // Update existing title
+            existingTitle.textContent = replacedText
+          } else {
+            // Create new title
+            const newTitle = document.createElement('title')
+            newTitle.textContent = replacedText
+            document.head.appendChild(newTitle)
           }
-          
-          // Replace branding in meta content
-          if (el.tagName === 'META') {
+        } else if (el.tagName === 'META') {
+          // Handle meta tags
+          const existing = document.querySelector(
+            `meta[name="${el.getAttribute('name') || el.getAttribute('property')}"]`
+          )
+          if (!existing) {
+            const clone = el.cloneNode(true) as HTMLElement
             const content = clone.getAttribute('content')
             if (content) {
               clone.setAttribute('content', content
@@ -132,9 +139,19 @@ export default function PageRenderer({ html }: PageRendererProps) {
                 .replace(/allure digital/gi, 'Rimalweb')
                 .replace(/alluredigital\.net/gi, 'rimalweb.com'))
             }
+            document.head.appendChild(clone)
+          } else {
+            // Update existing meta tag
+            const content = el.getAttribute('content')
+            if (content) {
+              const replacedContent = content
+                .replace(/Allure Digital/gi, 'Rimalweb')
+                .replace(/AllureDigital/gi, 'Rimalweb')
+                .replace(/allure digital/gi, 'Rimalweb')
+                .replace(/alluredigital\.net/gi, 'rimalweb.com')
+              existing.setAttribute('content', replacedContent)
+            }
           }
-          
-          document.head.appendChild(clone)
         }
       })
     }
