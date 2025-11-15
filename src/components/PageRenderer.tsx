@@ -480,7 +480,16 @@ export default function PageRenderer({ html }: PageRendererProps) {
               '/software-development': '/appian-development', // Map to appian-development page
               '/local-seo': '/local-seo',
               '/ppc-advertising': '/ppc-advertising',
+              '/google-ads-management': '/ppc-advertising', // Map to PPC advertising page
               '/wordpress-development': '/wordpress-development',
+              '/shopify-development': '/shopify-development',
+              '/bricks-builder-development': '/bricks-builder-development',
+              '/crm-development': '/crm-development',
+              '/google-map-optimization': '/google-map-optimization',
+              '/small-business-seo-service': '/small-business-seo-service',
+              '/local-business-citations-building': '/local-business-citations-building',
+              '/landing-page-optimization': '/landing-page-optimization',
+              '/technical-seo-service': '/technical-seo-service',
               '/contact-us': '/contact-us',
               '/who-we-are': '/who-we-are',
               '/portfolio': '/portfolio',
@@ -1334,7 +1343,7 @@ export default function PageRenderer({ html }: PageRendererProps) {
                 // Force set static background image - medium size (45% size) with cache-busting
                 element.style.setProperty('background-image', `url('${aboutBannerUrl}')`, 'important')
                 element.style.setProperty('background-size', '45%', 'important')
-                element.style.setProperty('background-position', 'center', 'important')
+                element.style.setProperty('background-position', 'right center', 'important')
                 element.style.setProperty('background-repeat', 'no-repeat', 'important')
                 element.style.setProperty('min-height', '500px', 'important')
                 element.style.setProperty('opacity', '1', 'important')
@@ -1345,7 +1354,7 @@ export default function PageRenderer({ html }: PageRendererProps) {
                   const sectionEl = section as HTMLElement
                   sectionEl.style.setProperty('background-image', `url('${aboutBannerUrl}')`, 'important')
                   sectionEl.style.setProperty('background-size', '45%', 'important')
-                  sectionEl.style.setProperty('background-position', 'center', 'important')
+                  sectionEl.style.setProperty('background-position', 'right center', 'important')
                   sectionEl.style.setProperty('background-repeat', 'no-repeat', 'important')
                 }
                 
