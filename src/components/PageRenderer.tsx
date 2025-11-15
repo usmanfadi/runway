@@ -62,7 +62,105 @@ export default function PageRenderer({ html }: PageRendererProps) {
 
     // Extract and inject head content FIRST (before body)
     const head = doc.querySelector('head')
+    const stylePromises: Promise<void>[] = []
+    
     if (head) {
+      // Preload critical CSS files first for faster rendering
+      const criticalCSS: string[] = []
+      const criticalImages: string[] = []
+      const criticalScripts: string[] = []
+      
+      // Collect all CSS files for preloading
+      head.querySelectorAll('link[rel="stylesheet"]').forEach((el) => {
+        const href = el.getAttribute('href') || ''
+        if (href.includes('alluredigital.net') && !href.includes('fonts.googleapis.com')) {
+          const filename = getAssetFilename(href)
+          if (filename) {
+            criticalCSS.push(`/assets/${filename}`)
+          }
+        }
+      })
+      
+      // Collect critical images from body (logo, hero images)
+      const body = doc.querySelector('body')
+      if (body) {
+        // Preload logo image
+        criticalImages.push('/rimal.png')
+        
+        // Preload hero images
+        body.querySelectorAll('img[src], [style*="background-image"]').forEach((el) => {
+          if (el.tagName === 'IMG') {
+            const src = (el as HTMLImageElement).getAttribute('src') || ''
+            if (src && (src.includes('alluredigital.net') || src.includes('rimalweb.net') || src.startsWith('/assets/'))) {
+              const fixedSrc = src.includes('/assets/') ? src : `/assets/${getAssetFilename(src) || ''}`
+              if (fixedSrc && fixedSrc !== '/assets/' && !criticalImages.includes(fixedSrc)) {
+                criticalImages.push(fixedSrc)
+              }
+            }
+          } else {
+            // Check background images
+            const style = (el as HTMLElement).getAttribute('style') || ''
+            const bgMatch = style.match(/background-image:\s*url\(['"]?([^'")]+)['"]?\)/i)
+            if (bgMatch && bgMatch[1]) {
+              const bgUrl = bgMatch[1]
+              if (bgUrl.includes('alluredigital.net') || bgUrl.includes('rimalweb.net') || bgUrl.startsWith('/assets/')) {
+                const fixedSrc = bgUrl.includes('/assets/') ? bgUrl : `/assets/${getAssetFilename(bgUrl) || ''}`
+                if (fixedSrc && fixedSrc !== '/assets/' && !criticalImages.includes(fixedSrc)) {
+                  criticalImages.push(fixedSrc)
+                }
+              }
+            }
+          }
+        })
+      }
+      
+      // Collect critical scripts
+      head.querySelectorAll('script[src]').forEach((el) => {
+        const src = el.getAttribute('src') || ''
+        if (src && (src.includes('alluredigital.net') || src.startsWith('/assets/'))) {
+          const filename = getAssetFilename(src)
+          if (filename) {
+            const scriptPath = `/assets/${filename}`
+            if (!criticalScripts.includes(scriptPath)) {
+              criticalScripts.push(scriptPath)
+            }
+          }
+        }
+      })
+      
+      // Add preload links for critical CSS
+      criticalCSS.forEach((cssPath) => {
+        if (!document.querySelector(`link[rel="preload"][href="${cssPath}"]`)) {
+          const preloadLink = document.createElement('link')
+          preloadLink.rel = 'preload'
+          preloadLink.as = 'style'
+          preloadLink.href = cssPath
+          document.head.appendChild(preloadLink)
+        }
+      })
+      
+      // Add preload links for critical images (limit to first 10 to avoid too many requests)
+      criticalImages.slice(0, 10).forEach((imgPath) => {
+        if (imgPath && !document.querySelector(`link[rel="preload"][href="${imgPath}"]`)) {
+          const preloadLink = document.createElement('link')
+          preloadLink.rel = 'preload'
+          preloadLink.as = 'image'
+          preloadLink.href = imgPath
+          document.head.appendChild(preloadLink)
+        }
+      })
+      
+      // Add preload links for critical scripts
+      criticalScripts.slice(0, 5).forEach((scriptPath) => {
+        if (scriptPath && !document.querySelector(`link[rel="preload"][href="${scriptPath}"]`)) {
+          const preloadLink = document.createElement('link')
+          preloadLink.rel = 'preload'
+          preloadLink.as = 'script'
+          preloadLink.href = scriptPath
+          document.head.appendChild(preloadLink)
+        }
+      })
+      
       // Inject ALL stylesheets (preserve order for animations)
       head.querySelectorAll('link[rel="stylesheet"], style').forEach((el) => {
         if (el.tagName === 'LINK') {
@@ -89,7 +187,17 @@ export default function PageRenderer({ html }: PageRendererProps) {
             }
             
             clone.setAttribute('data-injected', 'true')
-            document.head.appendChild(clone)
+            
+            // Wait for stylesheet to load
+            const stylePromise = new Promise<void>((resolve) => {
+              clone.onload = () => resolve()
+              clone.onerror = () => resolve() // Continue even if stylesheet fails
+              document.head.appendChild(clone)
+              
+              // If stylesheet loads very quickly, resolve after a small delay
+              setTimeout(() => resolve(), 50)
+            })
+            stylePromises.push(stylePromise)
             stylesLoadedRef.current.add(styleId)
           }
         } else if (el.tagName === 'STYLE') {
@@ -344,6 +452,9 @@ export default function PageRenderer({ html }: PageRendererProps) {
             // Convert common WordPress paths to Next.js routes
             const routeMap: { [key: string]: string } = {
               '/social-media-management': '/social-media-management',
+              '/social-media-marketing': '/social-media-management', // Map to existing page
+              '/appian-development': '/appian-development',
+              '/software-development': '/appian-development', // Map to appian-development page
               '/local-seo': '/local-seo',
               '/ppc-advertising': '/ppc-advertising',
               '/wordpress-development': '/wordpress-development',
@@ -956,9 +1067,11 @@ export default function PageRenderer({ html }: PageRendererProps) {
         }
       })
 
-      // Wait for scripts to load, then trigger DOM ready
-      if (scriptPromises.length > 0) {
-        Promise.all(scriptPromises).then(() => {
+      // Wait for CSS to load first, then scripts, then show content
+      const allPromises = [...stylePromises, ...scriptPromises]
+      
+      if (allPromises.length > 0) {
+        Promise.all(allPromises).then(() => {
           // Trigger DOMContentLoaded for scripts that depend on it
           if (document.readyState === 'loading') {
             document.dispatchEvent(new Event('DOMContentLoaded'))
@@ -971,19 +1084,22 @@ export default function PageRenderer({ html }: PageRendererProps) {
             })
           }
           
-          // Hide loading after a short delay to ensure everything is rendered
+          // Wait a bit more for CSS to apply and layout to settle
+          // This ensures styles are fully applied before showing content
           setTimeout(() => {
             setIsLoading(false)
-          }, 300)
+          }, 400)
         }).catch(() => {
-          // Even if scripts fail, hide loading
-          setIsLoading(false)
+          // Even if assets fail, hide loading after a delay
+          setTimeout(() => {
+            setIsLoading(false)
+          }, 500)
         })
       } else {
-        // No scripts to load, hide loading after content is set
+        // No assets to load, wait a bit for initial render
         setTimeout(() => {
           setIsLoading(false)
-        }, 100)
+        }, 200)
       }
     }
   }, [html])
