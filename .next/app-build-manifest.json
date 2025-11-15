@@ -11,6 +11,16 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
+    "/who-we-are/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/who-we-are/page.js"
+    ],
+    "/landing-page-optimization/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/landing-page-optimization/page.js"
+    ],
     "/blog/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -21,55 +31,40 @@
       "static/chunks/main-app.js",
       "static/chunks/app/blog/everything-you-need-to-know-about-how-digital-marketing-works/page.js"
     ],
-    "/contact-us/page": [
+    "/blog/digital-marketing-strategies-that-work-2025/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/contact-us/page.js"
+      "static/chunks/app/blog/digital-marketing-strategies-that-work-2025/page.js"
     ],
-    "/work/page": [
+    "/blog/voice-search-importance-in-marketing-seo/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/work/page.js"
+      "static/chunks/app/blog/voice-search-importance-in-marketing-seo/page.js"
     ],
-    "/who-we-are/page": [
+    "/social-media-management/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/who-we-are/page.js"
-    ],
-    "/work/flatrate-junk-removal/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/work/flatrate-junk-removal/page.js"
-    ],
-    "/google-map-optimization/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/google-map-optimization/page.js"
-    ],
-    "/local-business-citations-building/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/local-business-citations-building/page.js"
-    ],
-    "/technical-seo-service/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/technical-seo-service/page.js"
-    ],
-    "/crm-development/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/crm-development/page.js"
-    ],
-    "/local-seo/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/local-seo/page.js"
+      "static/chunks/app/social-media-management/page.js"
     ],
     "/ppc-advertising/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/ppc-advertising/page.js"
+    ],
+    "/shopify-development/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/shopify-development/page.js"
+    ],
+    "/google-ads-management/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/google-ads-management/page.js"
+    ],
+    "/technical-seo-service/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/technical-seo-service/page.js"
     ],
     "/_not-found/page": [
       "static/chunks/webpack.js",

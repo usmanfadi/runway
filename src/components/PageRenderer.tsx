@@ -479,8 +479,8 @@ export default function PageRenderer({ html }: PageRendererProps) {
               '/appian-development': '/appian-development',
               '/software-development': '/appian-development', // Map to appian-development page
               '/local-seo': '/local-seo',
-              '/ppc-advertising': '/ppc-advertising',
-              '/google-ads-management': '/ppc-advertising', // Map to PPC advertising page
+              '/ppc-advertising': '/google-ads-management', // Map PPC to Google Ads Management
+              '/google-ads-management': '/google-ads-management', // Map to Google Ads Management page
               '/wordpress-development': '/wordpress-development',
               '/shopify-development': '/shopify-development',
               '/bricks-builder-development': '/bricks-builder-development',
