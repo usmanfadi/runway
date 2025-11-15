@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface PageRendererProps {
   html: string
@@ -50,9 +50,12 @@ export default function PageRenderer({ html }: PageRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const scriptsLoadedRef = useRef<Set<string>>(new Set())
   const stylesLoadedRef = useRef<Set<string>>(new Set())
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (!containerRef.current || !html) return
+    
+    setIsLoading(true)
 
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
@@ -150,14 +153,27 @@ export default function PageRenderer({ html }: PageRendererProps) {
             
             clone.setAttribute('data-injected', 'true')
             
-            // Wait for stylesheet to load
+            // Wait for stylesheet to load and be applied
             const stylePromise = new Promise<void>((resolve) => {
-              clone.onload = () => resolve()
-              clone.onerror = () => resolve() // Continue even if stylesheet fails
-            document.head.appendChild(clone)
+              let resolved = false
+              const resolveOnce = () => {
+                if (!resolved) {
+                  resolved = true
+                  // Wait a bit more to ensure CSS is applied to DOM
+                  setTimeout(() => resolve(), 100)
+                }
+              }
               
-              // If stylesheet loads very quickly, resolve after a small delay
-              setTimeout(() => resolve(), 50)
+              clone.onload = resolveOnce
+              clone.onerror = resolveOnce // Continue even if stylesheet fails
+              document.head.appendChild(clone)
+              
+              // Fallback: resolve after reasonable timeout
+              setTimeout(() => {
+                if (!resolved) {
+                  resolveOnce()
+                }
+              }, 2000)
             })
             stylePromises.push(stylePromise)
             stylesLoadedRef.current.add(styleId)
@@ -1556,33 +1572,129 @@ export default function PageRenderer({ html }: PageRendererProps) {
         }
       })
 
-      // Load CSS and scripts in background (no blocking, content shows immediately)
-      // All assets are preloaded above, so they'll be cached
-      const allPromises = [...stylePromises, ...scriptPromises]
-      
-      if (allPromises.length > 0) {
-        // Load assets in background without blocking UI
-        Promise.all(allPromises).then(() => {
-        // Trigger DOMContentLoaded for scripts that depend on it
-        if (document.readyState === 'loading') {
-          document.dispatchEvent(new Event('DOMContentLoaded'))
-        }
-        
-        // Trigger jQuery ready if jQuery is loaded
-        if (typeof window !== 'undefined' && (window as any).jQuery) {
-          (window as any).jQuery(document).ready(() => {
-            // Elementor and other scripts will initialize
+      // Wait for CSS to load first (critical), then scripts, then show content
+      // CSS must be fully loaded before showing content to prevent broken layout
+      if (stylePromises.length > 0) {
+        // Wait for ALL CSS to load first
+        Promise.all(stylePromises).then(() => {
+          // Force a reflow to ensure CSS is applied
+          if (containerRef.current) {
+            containerRef.current.offsetHeight // Trigger reflow
+          }
+          
+          // Wait for CSS to be fully applied to DOM
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              // Now load scripts in background (non-blocking)
+              if (scriptPromises.length > 0) {
+                Promise.all(scriptPromises).then(() => {
+                  // Trigger DOMContentLoaded for scripts that depend on it
+                  if (document.readyState === 'loading') {
+                    document.dispatchEvent(new Event('DOMContentLoaded'))
+                  }
+                  
+                  // Trigger jQuery ready if jQuery is loaded
+                  if (typeof window !== 'undefined' && (window as any).jQuery) {
+                    (window as any).jQuery(document).ready(() => {
+                      // Elementor and other scripts will initialize
+                    })
+                  }
+                }).catch(() => {
+                  // Scripts failed but continue
+                })
+              }
+              
+              // Show content after CSS is loaded and applied
+              setTimeout(() => {
+                setIsLoading(false)
+              }, 150)
+            })
           })
-        }
         }).catch(() => {
-          // Silently continue even if some assets fail
-      })
+          // Even if CSS fails, wait a bit then show content
+          setTimeout(() => {
+            setIsLoading(false)
+          }, 300)
+        })
+      } else if (scriptPromises.length > 0) {
+        // No CSS but has scripts
+        Promise.all(scriptPromises).then(() => {
+          setTimeout(() => {
+            setIsLoading(false)
+          }, 100)
+        }).catch(() => {
+          setTimeout(() => {
+            setIsLoading(false)
+          }, 200)
+        })
+      } else {
+        // No assets to load, wait a bit for initial render
+        setTimeout(() => {
+          setIsLoading(false)
+        }, 200)
       }
     }
   }, [html])
 
   return (
-    <div ref={containerRef} />
+    <>
+      {isLoading && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          fontFamily: 'system-ui, -apple-system, sans-serif'
+        }}>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            border: '5px solid rgba(255, 255, 255, 0.3)',
+            borderTop: '5px solid #ffffff',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            marginBottom: '30px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)'
+          }} />
+          <div style={{
+            color: '#ffffff',
+            fontSize: '24px',
+            fontWeight: 600,
+            marginBottom: '10px',
+            textShadow: '0 2px 10px rgba(0, 0, 0, 0.2)'
+          }}>
+            Rimalweb
+          </div>
+          <div style={{
+            color: 'rgba(255, 255, 255, 0.9)',
+            fontSize: '16px',
+            fontWeight: 400
+          }}>
+            Loading...
+          </div>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )}
+      <div 
+        ref={containerRef} 
+        style={{
+          opacity: isLoading ? 0 : 1,
+          transition: 'opacity 0.3s ease-in-out'
+        }}
+      />
+    </>
   )
 }
 
