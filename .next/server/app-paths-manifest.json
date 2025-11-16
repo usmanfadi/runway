@@ -1,10 +1,6 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/page": "app/page.js",
-  "/social-media-management/page": "app/social-media-management/page.js",
-  "/ppc-advertising/page": "app/ppc-advertising/page.js",
-  "/shopify-development/page": "app/shopify-development/page.js",
-  "/google-ads-management/page": "app/google-ads-management/page.js",
-  "/landing-page-optimization/page": "app/landing-page-optimization/page.js",
-  "/technical-seo-service/page": "app/technical-seo-service/page.js"
+  "/work/page": "app/work/page.js",
+  "/work/flatrate-junk-removal/page": "app/work/flatrate-junk-removal/page.js"
 }
