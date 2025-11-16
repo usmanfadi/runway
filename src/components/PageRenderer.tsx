@@ -469,6 +469,24 @@ export default function PageRenderer({ html }: PageRendererProps) {
       body.querySelectorAll('a[href]').forEach((a) => {
         const href = a.getAttribute('href')
         
+        // Remove Facebook and Instagram links
+        if (href && (
+          href.includes('facebook.com') ||
+          href.includes('fb.com') ||
+          href.includes('instagram.com') ||
+          href.includes('facebook.net') ||
+          href.toLowerCase().includes('facebook') ||
+          href.toLowerCase().includes('instagram')
+        )) {
+          // Remove the link but keep the text
+          a.removeAttribute('href')
+          const linkEl = a as HTMLElement
+          linkEl.style.pointerEvents = 'none'
+          linkEl.style.cursor = 'default'
+          linkEl.style.textDecoration = 'none'
+          return
+        }
+        
         // Remove Google Maps links and location links
         if (href && (
           href.includes('maps.google.com') ||
@@ -867,9 +885,26 @@ export default function PageRenderer({ html }: PageRendererProps) {
           }
         })
         
-        // Also replace in href attributes (tel: and mailto: links) and remove Google Maps links
+        // Also replace in href attributes (tel: and mailto: links) and remove social media/Google Maps links
         tempDiv.querySelectorAll('a[href]').forEach((a) => {
           const href = a.getAttribute('href') || ''
+          
+          // Remove Facebook and Instagram links
+          if (href && (
+            href.includes('facebook.com') ||
+            href.includes('fb.com') ||
+            href.includes('instagram.com') ||
+            href.includes('facebook.net') ||
+            href.toLowerCase().includes('facebook') ||
+            href.toLowerCase().includes('instagram')
+          )) {
+            a.removeAttribute('href')
+            const htmlEl = a as HTMLElement
+            htmlEl.style.pointerEvents = 'none'
+            htmlEl.style.cursor = 'default'
+            htmlEl.style.textDecoration = 'none'
+            return
+          }
           
           // Remove Google Maps links
           if (href && (
@@ -1580,6 +1615,7 @@ export default function PageRenderer({ html }: PageRendererProps) {
               position: fixed !important;
               top: 0 !important;
               right: 0 !important;
+              left: auto !important;
               width: 400px !important;
               max-width: 90vw !important;
               height: 100vh !important;
@@ -1601,6 +1637,8 @@ export default function PageRenderer({ html }: PageRendererProps) {
               visibility: visible !important;
               opacity: 1 !important;
               transform: translateX(0) !important;
+              right: 0 !important;
+              left: auto !important;
             }
             
             /* Hide offcanvas by default - only show when opened */
@@ -1615,16 +1653,61 @@ export default function PageRenderer({ html }: PageRendererProps) {
               height: 100% !important;
             }
             
-            /* Offcanvas overlay */
+            /* Offcanvas overlay - REMOVED: No black overlay on page */
             .bdt-offcanvas-page::before {
-              content: '' !important;
-              position: fixed !important;
-              top: 0 !important;
-              left: 0 !important;
-              width: 100% !important;
-              height: 100% !important;
-              background: rgba(0,0,0,0.5) !important;
-              z-index: 9999 !important;
+              display: none !important;
+              content: none !important;
+              background: transparent !important;
+            }
+            
+            /* Remove any black overlay from body when offcanvas is open */
+            body.bdt-offcanvas-page {
+              overflow: hidden !important;
+            }
+            
+            body.bdt-offcanvas-page::before {
+              display: none !important;
+              content: none !important;
+              background: transparent !important;
+            }
+            
+            /* Hide any backdrop/overlay elements that cause white screen */
+            .bdt-offcanvas-backdrop,
+            .offcanvas-backdrop,
+            [class*="overlay"],
+            [class*="backdrop"] {
+              display: none !important;
+              visibility: hidden !important;
+              opacity: 0 !important;
+              background: transparent !important;
+              pointer-events: none !important;
+            }
+            
+            /* Ensure body has no white overlay when menu closes */
+            body:not(.bdt-offcanvas-page) {
+              background-color: transparent !important;
+            }
+            
+            /* Hide Facebook and Instagram links and icons */
+            a[href*="facebook"],
+            a[href*="fb.com"],
+            a[href*="instagram"],
+            a[href*="Facebook"],
+            a[href*="Instagram"],
+            .elementor-icon-list-item a[href*="facebook"],
+            .elementor-icon-list-item a[href*="instagram"],
+            .social-icon[href*="facebook"],
+            .social-icon[href*="instagram"],
+            [class*="facebook"],
+            [class*="instagram"]:has(a[href*="facebook"]),
+            [class*="instagram"]:has(a[href*="instagram"]) {
+              display: none !important;
+              visibility: hidden !important;
+              opacity: 0 !important;
+              height: 0 !important;
+              width: 0 !important;
+              margin: 0 !important;
+              padding: 0 !important;
             }
             
             /* Offcanvas button styling */
@@ -2037,8 +2120,19 @@ export default function PageRenderer({ html }: PageRendererProps) {
             phoneEmailElements.forEach((el) => {
               const htmlEl = el as HTMLElement
               const text = htmlEl.textContent || ''
+              const href = htmlEl.querySelector('a')?.getAttribute('href') || ''
               // Hide if contains phone number or email
               if (text.includes('(212)') || text.includes('301-7615') || text.includes('@') || text.includes('tel:') || text.includes('mailto:')) {
+                htmlEl.style.display = 'none'
+                htmlEl.style.visibility = 'hidden'
+                htmlEl.style.opacity = '0'
+                htmlEl.style.height = '0'
+                htmlEl.style.margin = '0'
+                htmlEl.style.padding = '0'
+              }
+              // Hide if contains Facebook or Instagram links
+              if (href.includes('facebook') || href.includes('fb.com') || href.includes('instagram') || 
+                  text.toLowerCase().includes('facebook') || text.toLowerCase().includes('instagram')) {
                 htmlEl.style.display = 'none'
                 htmlEl.style.visibility = 'hidden'
                 htmlEl.style.opacity = '0'
@@ -3236,72 +3330,230 @@ export default function PageRenderer({ html }: PageRendererProps) {
                   // Also initialize offcanvas after a delay to ensure scripts are loaded
                   setTimeout(() => {
                     if (containerRef.current) {
+                      // Remove all Facebook and Instagram links globally
+                      const allLinks = containerRef.current.querySelectorAll('a[href]')
+                      allLinks.forEach((link) => {
+                        const href = link.getAttribute('href') || ''
+                        if (href.includes('facebook.com') || href.includes('fb.com') || href.includes('instagram.com') ||
+                            href.includes('facebook.net') || href.toLowerCase().includes('facebook') || 
+                            href.toLowerCase().includes('instagram')) {
+                          link.removeAttribute('href')
+                          const linkEl = link as HTMLElement
+                          linkEl.style.pointerEvents = 'none'
+                          linkEl.style.cursor = 'default'
+                          linkEl.style.textDecoration = 'none'
+                          linkEl.style.display = 'none'
+                          linkEl.style.visibility = 'hidden'
+                          linkEl.style.opacity = '0'
+                        }
+                      })
+                      
                       // Hide offcanvas menu by default - only show when button is clicked
                       const offcanvasMenus = containerRef.current.querySelectorAll('.bdt-offcanvas')
                       offcanvasMenus.forEach((menu) => {
                         const menuEl = menu as HTMLElement
-                        // Hide menu by default to prevent white screen
+                        // Hide menu by default to prevent white screen, ensure right side positioning
                         menuEl.style.display = 'none'
                         menuEl.style.visibility = 'hidden'
                         menuEl.style.opacity = '0'
+                        menuEl.style.transform = 'translateX(100%)'
+                        menuEl.style.right = '0'
+                        menuEl.style.left = 'auto'
                         menuEl.classList.remove('bdt-open')
                       })
                       
-                      // Fix offcanvas button click handlers
-                      const offcanvasButtons = containerRef.current.querySelectorAll('.bdt-offcanvas-button, [data-bdt-toggle*="offcanvas"]')
+                      // Fix offcanvas button click handlers - WORK ON FIRST CLICK
+                      const offcanvasButtons = containerRef.current.querySelectorAll('.bdt-offcanvas-button, [data-bdt-toggle*="offcanvas"], [data-bdt-toggle*="target"]')
                       offcanvasButtons.forEach((btn) => {
-                        btn.addEventListener('click', function(e) {
+                        // Remove any existing listeners to prevent double-click issue
+                        const newBtn = btn.cloneNode(true) as HTMLElement
+                        btn.parentNode?.replaceChild(newBtn, btn)
+                        
+                        newBtn.addEventListener('click', function(e) {
                           e.preventDefault()
                           e.stopPropagation()
+                          
                           const targetAttr = this.getAttribute('data-bdt-toggle')
+                          let targetId = ''
+                          
                           if (targetAttr) {
-                            const targetId = targetAttr.replace('target: ', '').trim()
-                            const target = document.querySelector(targetId)
+                            // Handle different formats: "target: #id" or "#id" or "offcanvas: #id"
+                            if (targetAttr.includes('target:')) {
+                              targetId = targetAttr.replace(/target:\s*/i, '').trim()
+                            } else if (targetAttr.includes('offcanvas:')) {
+                              targetId = targetAttr.replace(/offcanvas:\s*/i, '').trim()
+                            } else if (targetAttr.startsWith('#')) {
+                              targetId = targetAttr
+                            }
+                          }
+                          
+                          // Also check href if target not found
+                          if (!targetId && (this as any).href) {
+                            const href = (this as any).href
+                            const hashMatch = href.match(/#[^\s]+/)
+                            if (hashMatch) {
+                              targetId = hashMatch[0]
+                            }
+                          }
+                          
+                          if (targetId) {
+                            const target = document.querySelector(targetId) as HTMLElement
                             if (target) {
-                              // Toggle offcanvas
-                              if ((window as any).UIkit) {
-                                const offcanvas = (window as any).UIkit.offcanvas(target)
-                                if (offcanvas) {
-                                  offcanvas.toggle()
-                                }
-                              } else {
-                                // Fallback: manually toggle
-                                const isOpen = target.classList.contains('bdt-open')
-                                if (isOpen) {
-                                  // Close menu
-                                  target.classList.remove('bdt-open')
+                              const isOpen = target.classList.contains('bdt-open') || target.style.display === 'block'
+                              
+                              if (isOpen) {
+                                // Close menu - remove black overlay, reset positioning
+                                target.classList.remove('bdt-open')
+                                target.style.transform = 'translateX(100%)'
+                                target.setAttribute('aria-hidden', 'true')
+                                // Wait for transition, then fully hide
+                                setTimeout(() => {
                                   target.style.display = 'none'
                                   target.style.visibility = 'hidden'
                                   target.style.opacity = '0'
-                                  document.body.classList.remove('bdt-offcanvas-page')
-                                } else {
-                                  // Open menu
-                                  target.classList.add('bdt-open')
-                                  target.style.display = 'block'
-                                  target.style.visibility = 'visible'
-                                  target.style.opacity = '1'
-                                  document.body.classList.add('bdt-offcanvas-page')
-                                }
+                                  target.style.right = '0'
+                                  target.style.left = 'auto'
+                                }, 300)
+                                document.body.classList.remove('bdt-offcanvas-page')
+                                document.body.style.overflow = ''
+                                document.body.style.backgroundColor = ''
+                                // Remove any white overlay/backdrop
+                                const overlays = document.querySelectorAll('.bdt-offcanvas-backdrop, .offcanvas-backdrop, [class*="overlay"], [class*="backdrop"]')
+                                overlays.forEach((overlay) => {
+                                  const el = overlay as HTMLElement
+                                  el.style.display = 'none'
+                                  el.style.visibility = 'hidden'
+                                  el.style.opacity = '0'
+                                  el.remove()
+                                })
+                              } else {
+                                // Open menu on FIRST CLICK - no black overlay, ensure right side position
+                                target.classList.add('bdt-open')
+                                target.style.display = 'block'
+                                target.style.visibility = 'visible'
+                                target.style.opacity = '1'
+                                target.style.transform = 'translateX(0)'
+                                target.style.right = '0'
+                                target.style.left = 'auto'
+                                target.setAttribute('aria-hidden', 'false')
+                                document.body.style.overflow = 'hidden'
+                                // DO NOT add bdt-offcanvas-page class (it causes black overlay)
+                                document.body.classList.remove('bdt-offcanvas-page')
+                                document.body.style.backgroundColor = 'transparent'
                               }
                             }
                           }
                         })
                       })
                       
-                      // Fix offcanvas close button handlers
-                      const closeButtons = containerRef.current.querySelectorAll('.bdt-offcanvas-close, [data-bdt-close]')
-                      closeButtons.forEach((btn) => {
-                        btn.addEventListener('click', function(e) {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          const offcanvas = this.closest('.bdt-offcanvas')
-                          if (offcanvas) {
-                            const menuEl = offcanvas as HTMLElement
-                            menuEl.classList.remove('bdt-open')
-                            menuEl.style.display = 'none'
-                            menuEl.style.visibility = 'hidden'
-                            menuEl.style.opacity = '0'
-                            document.body.classList.remove('bdt-offcanvas-page')
+                      // Fix offcanvas close button handlers - handle all possible close buttons
+                      const closeButtonSelectors = [
+                        '.bdt-offcanvas-close',
+                        '[data-bdt-close]',
+                        '[data-close]',
+                        '.offcanvas-close',
+                        '.close-button'
+                      ]
+                      
+                      // Handle standard close button selectors
+                      closeButtonSelectors.forEach((selector) => {
+                        const closeButtons = containerRef.current.querySelectorAll(selector)
+                        closeButtons.forEach((btn) => {
+                          // Remove any existing listeners
+                          const newBtn = btn.cloneNode(true) as HTMLElement
+                          btn.parentNode?.replaceChild(newBtn, btn)
+                          
+                          newBtn.addEventListener('click', function(e) {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            
+                            // Find the offcanvas menu
+                            const offcanvas = this.closest('.bdt-offcanvas') || document.querySelector('.bdt-offcanvas.bdt-open') || 
+                                            document.querySelector('.bdt-offcanvas[aria-hidden="false"]')
+                            
+                            if (offcanvas) {
+                              const menuEl = offcanvas as HTMLElement
+                              menuEl.classList.remove('bdt-open')
+                              menuEl.style.transform = 'translateX(100%)'
+                              menuEl.setAttribute('aria-hidden', 'true')
+                              // Wait for transition, then fully hide
+                              setTimeout(() => {
+                                menuEl.style.display = 'none'
+                                menuEl.style.visibility = 'hidden'
+                                menuEl.style.opacity = '0'
+                                menuEl.style.right = '0'
+                                menuEl.style.left = 'auto'
+                              }, 300)
+                              document.body.classList.remove('bdt-offcanvas-page')
+                              document.body.style.overflow = ''
+                              document.body.style.backgroundColor = ''
+                              // Remove any white overlay/backdrop
+                              const overlays = document.querySelectorAll('.bdt-offcanvas-backdrop, .offcanvas-backdrop, [class*="overlay"], [class*="backdrop"]')
+                              overlays.forEach((overlay) => {
+                                const el = overlay as HTMLElement
+                                el.style.display = 'none'
+                                el.style.visibility = 'hidden'
+                                el.style.opacity = '0'
+                                el.remove()
+                              })
+                            }
+                          })
+                        })
+                      })
+                      
+                      // Also handle any buttons inside offcanvas that look like close buttons
+                      offcanvasMenus.forEach((offcanvas) => {
+                        const buttons = offcanvas.querySelectorAll('button, a, [role="button"]')
+                        buttons.forEach((btn) => {
+                          const btnEl = btn as HTMLElement
+                          const btnText = btnEl.textContent || ''
+                          const btnHtml = btnEl.innerHTML || ''
+                          const ariaLabel = btnEl.getAttribute('aria-label') || ''
+                          const className = btnEl.className || ''
+                          
+                          // Check if this looks like a close button
+                          const isCloseButton = 
+                            btnText.includes('×') || btnText.includes('✕') || btnText.includes('✖') ||
+                            btnHtml.includes('×') || btnHtml.includes('&times;') || btnHtml.includes('✕') || btnHtml.includes('✖') ||
+                            ariaLabel.toLowerCase().includes('close') ||
+                            className.toLowerCase().includes('close') ||
+                            btnEl.querySelector('svg') !== null ||
+                            btnEl.querySelector('.elementor-icon') !== null
+                          
+                          if (isCloseButton && !closeButtonSelectors.some(sel => btnEl.matches(sel))) {
+                            // Remove any existing listeners
+                            const newBtn = btn.cloneNode(true) as HTMLElement
+                            btn.parentNode?.replaceChild(newBtn, btn)
+                            
+                            newBtn.addEventListener('click', function(e) {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              
+                              const menuEl = offcanvas as HTMLElement
+                              menuEl.classList.remove('bdt-open')
+                              menuEl.style.transform = 'translateX(100%)'
+                              menuEl.setAttribute('aria-hidden', 'true')
+                              // Wait for transition, then fully hide
+                              setTimeout(() => {
+                                menuEl.style.display = 'none'
+                                menuEl.style.visibility = 'hidden'
+                                menuEl.style.opacity = '0'
+                                menuEl.style.right = '0'
+                                menuEl.style.left = 'auto'
+                              }, 300)
+                              document.body.classList.remove('bdt-offcanvas-page')
+                              document.body.style.overflow = ''
+                              document.body.style.backgroundColor = ''
+                              // Remove any white overlay/backdrop
+                              const overlays = document.querySelectorAll('.bdt-offcanvas-backdrop, .offcanvas-backdrop, [class*="overlay"], [class*="backdrop"]')
+                              overlays.forEach((overlay) => {
+                                const el = overlay as HTMLElement
+                                el.style.display = 'none'
+                                el.style.visibility = 'hidden'
+                                el.style.opacity = '0'
+                                el.remove()
+                              })
+                            })
                           }
                         })
                       })
